@@ -60,13 +60,14 @@ if(EXISTS "${LIBNexusWidevine_LIBRARY}")
     mark_as_advanced(LIBNexusWidevine_LIBRARY)
 
     if(NOT TARGET NexusWidevine::NexusWidevine)
-        add_library(NexusWidevine::NexusWidevine UNKNOWN IMPORTED)
+        add_library(NexusWidevine::NexusWidevine SHARED IMPORTED)
         
         set_target_properties(NexusWidevine::NexusWidevine PROPERTIES
                 IMPORTED_LINK_INTERFACE_LANGUAGES "C"
                 IMPORTED_LOCATION "${LIBNexusWidevine_LIBRARY}"
                 INTERFACE_INCLUDE_DIRECTORIES "${LIBNexusWidevine_INCLUDE_DIRS}"
                 INTERFACE_LINK_LIBRARIES "${LIBNexusWidevine_LIBRARIES}"
+                IMPORTED_NO_SONAME TRUE
         )
     endif()
 endif()
