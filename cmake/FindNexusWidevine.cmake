@@ -38,7 +38,7 @@ list(APPEND LIBNexusWidevine_INCLUDE_DIRS ${LIBNexusWidevine_INCLUDE_DIR} ${LIBN
 find_library(LIBNexusWidevine_LIBRARY wvcdm)
 
 # needed libs
-list(APPEND NeededLibs cmndrm cmndrm_tl oemcrypto_tl protobuf-lite)
+list(APPEND NeededLibs protobuf-lite cmndrm cmndrm_tl crypto oemcrypto_tl)
 
 # needed svp libs
 list(APPEND NeededLibs drmrootfs srai b_secbuf)
