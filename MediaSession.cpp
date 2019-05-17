@@ -294,17 +294,18 @@ CDMi_RESULT MediaKeySession::Decrypt(
   }
 
   uint8_t *desc = nullptr;
-  Rpc_Secbuf_Info RPCsecureBufferInfo;
+  Rpc_Secbuf_Info *RPCsecureBufferInfo;
   B_Secbuf_Info   BsecureBufferInfo;
 
   void *pOpaqueData;
 
-  ::memcpy(&RPCsecureBufferInfo, f_pbData, f_cbData);
+  RPCsecureBufferInfo = static_cast<Rpc_Secbuf_Info*>(::malloc(f_cbData));
+  ::memcpy(RPCsecureBufferInfo, f_pbData, f_cbData);
 
-  if (B_Secbuf_AllocWithToken(RPCsecureBufferInfo.size, (B_Secbuf_Type)RPCsecureBufferInfo.type, RPCsecureBufferInfo.token, &pOpaqueData)) {
+  if (B_Secbuf_AllocWithToken(RPCsecureBufferInfo->size, (B_Secbuf_Type)RPCsecureBufferInfo->type, RPCsecureBufferInfo->token, &pOpaqueData)) {
         printf("B_Secbuf_AllocWithToken() failed!\n");
     } else {
-        f_cbData = RPCsecureBufferInfo.size;
+        f_cbData = RPCsecureBufferInfo->size;
         // printf("B_Secbuf_AllocWithToken() succeeded. size:%d clear:%d type:%d token:%p ptr:%p %s:%d \n",sb_info.size, sb_info.clear_size, (B_Secbuf_Type)sb_info.type, sb_info.token,pOpaqueData, __FUNCTION__,__LINE__);
     }
 
@@ -334,6 +335,8 @@ CDMi_RESULT MediaKeySession::Decrypt(
       B_Secbuf_Free(pOpaqueData);
     }
   }
+
+  ::free(RPCsecureBufferInfo);
 
   return status;
 }
