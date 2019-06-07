@@ -179,7 +179,7 @@ public:
         _adminLock.Unlock();
     }
 
-    virtual void onKeyStatusesChange(const std::string& session_id) {
+    virtual void onKeyStatusesChange(const std::string& session_id,  bool has_new_usable_key) {
 
         _adminLock.Lock();
 
@@ -220,7 +220,7 @@ public:
 
         SessionMap::iterator index (_sessions.find(session_id));
 
-        if (index != _sessions.end()) index->second->onDirectIndividualizationRequest(request);
+        if (index != _sessions.end()) index->second->onDirectIndividualizationRequest(session_id, request);
 
         _adminLock.Unlock();
     }

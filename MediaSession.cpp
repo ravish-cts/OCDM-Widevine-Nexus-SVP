@@ -187,7 +187,9 @@ void MediaKeySession::onRemoveComplete() {
 void MediaKeySession::onDeferredComplete(widevine::Cdm::Status) {
 }
 
-void MediaKeySession::onDirectIndividualizationRequest(const string&) {
+void MediaKeySession::onDirectIndividualizationRequest(
+        const std::string& session_id,
+        const std::string& request) {
 }
 
 CDMi_RESULT MediaKeySession::Load(void) {
