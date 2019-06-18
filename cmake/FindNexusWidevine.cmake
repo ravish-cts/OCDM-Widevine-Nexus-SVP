@@ -35,7 +35,7 @@ find_path(LIBNexusSVP_INCLUDE_DIR b_secbuf.h
 list(APPEND LIBNexusWidevine_INCLUDE_DIRS ${LIBNexusWidevine_INCLUDE_DIR} ${LIBNexusSVP_INCLUDE_DIR})
 
 # main lib
-find_library(LIBNexusWidevine_LIBRARY wvcdm)
+find_library(LIBNexusWidevine_LIBRARY libwidevine_ce_cdm_shared.so)
 
 # needed libs
 list(APPEND NeededLibs protobuf-lite cmndrm cmndrm_tl crypto oemcrypto_tl)
