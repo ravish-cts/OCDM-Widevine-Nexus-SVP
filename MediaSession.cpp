@@ -296,7 +296,6 @@ CDMi_RESULT MediaKeySession::Decrypt(
     memset(&(m_IV[f_cbIV]), 0, 16 - f_cbIV);
   }
 
-  uint8_t *desc = nullptr;
   Rpc_Secbuf_Info *pRPCsecureBufferInfo;
   B_Secbuf_Info secureBufferInfo;
 
@@ -329,7 +328,7 @@ CDMi_RESULT MediaKeySession::Decrypt(
       widevine::Cdm::OutputBuffer output;
 
       uint32_t inClear, inEncrypted,  inTotal = 0, totalEncrypted = 0;
-      for(int i = 0; i < pRPCsecureBufferInfo->subsamples_count/2; i++) {
+      for(uint32_t i = 0; i < pRPCsecureBufferInfo->subsamples_count/2; i++) {
         inClear     = pRPCsecureBufferInfo->subsamples[2*i+0];
         inEncrypted = pRPCsecureBufferInfo->subsamples[2*i+1];
         output.data = reinterpret_cast<uint8_t*>(pOpaqueData)+inTotal+inClear;
