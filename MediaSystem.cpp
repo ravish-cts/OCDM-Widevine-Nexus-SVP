@@ -178,8 +178,12 @@ public:
 
         _adminLock.Unlock();
     }
-
-    virtual void onKeyStatusesChange(const std::string& session_id,  bool has_new_usable_key) {
+#ifdef USE_WVCDM
+    virtual void onKeyStatusesChange(const std::string& session_id)
+#else
+    virtual void onKeyStatusesChange(const std::string& session_id,  bool has_new_usable_key) 
+#endif    
+    {
 
         _adminLock.Lock();
 
@@ -237,6 +241,6 @@ static SystemFactoryType<WideVine> g_instance({"video/webm", "video/mp4", "audio
 }  // namespace CDMi
 
 CDMi::ISystemFactory* GetSystemFactory() {
-
+    
     return (&CDMi::g_instance); 
 }

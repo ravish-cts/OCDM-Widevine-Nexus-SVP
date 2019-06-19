@@ -32,10 +32,17 @@ find_path(LIBNexusWidevine_INCLUDE_DIR cdm.h
 find_path(LIBNexusSVP_INCLUDE_DIR b_secbuf.h
         PATH_SUFFIXES refsw)
 
+set(LIBNexusWidevine_DEFINITIONS "")
+
 list(APPEND LIBNexusWidevine_INCLUDE_DIRS ${LIBNexusWidevine_INCLUDE_DIR} ${LIBNexusSVP_INCLUDE_DIR})
 
 # main lib
-find_library(LIBNexusWidevine_LIBRARY libwidevine_ce_cdm_shared.so)
+find_library(LIBNexusWidevine_LIBRARY widevine_ce_cdm_shared)
+
+if(NOT LIBNexusWidevine_LIBRARY)
+    find_library(LIBNexusWidevine_LIBRARY wvcdm)
+    list(APPEND LIBNexusWidevine_DEFINITIONS "-DUSE_WVCDM")
+endif()
 
 # needed libs
 list(APPEND NeededLibs protobuf-lite cmndrm cmndrm_tl crypto oemcrypto_tl)
@@ -56,7 +63,7 @@ if(EXISTS "${LIBNexusWidevine_LIBRARY}")
 
     set(NexusWidevine_FOUND TRUE)
 
-    find_package_handle_standard_args(LIBNexusWidevine DEFAULT_MSG LIBNEXUS_INCLUDE LIBNexusWidevine_LIBRARY)
+    find_package_handle_standard_args(LIBNexusWidevine DEFAULT_MSG LIBNexusWidevine_LIBRARY LIBNEXUS_INCLUDE )
     mark_as_advanced(LIBNexusWidevine_LIBRARY)
 
     if(NOT TARGET NexusWidevine::NexusWidevine)
@@ -67,6 +74,7 @@ if(EXISTS "${LIBNexusWidevine_LIBRARY}")
                 IMPORTED_LOCATION "${LIBNexusWidevine_LIBRARY}"
                 INTERFACE_INCLUDE_DIRECTORIES "${LIBNexusWidevine_INCLUDE_DIRS}"
                 INTERFACE_LINK_LIBRARIES "${LIBNexusWidevine_LIBRARIES}"
+                INTERFACE_COMPILE_OPTIONS "${LIBNexusWidevine_DEFINITIONS}"
                 IMPORTED_NO_SONAME TRUE
         )
     endif()
