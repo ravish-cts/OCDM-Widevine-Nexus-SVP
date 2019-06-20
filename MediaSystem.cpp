@@ -178,10 +178,10 @@ public:
 
         _adminLock.Unlock();
     }
-#ifdef USE_WVCDM
-    virtual void onKeyStatusesChange(const std::string& session_id)
-#else
+#ifdef USE_CENC14
     virtual void onKeyStatusesChange(const std::string& session_id,  bool has_new_usable_key) 
+#else
+    virtual void onKeyStatusesChange(const std::string& session_id)
 #endif    
     {
 

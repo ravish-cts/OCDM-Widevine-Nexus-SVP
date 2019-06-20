@@ -41,7 +41,6 @@ find_library(LIBNexusWidevine_LIBRARY widevine_ce_cdm_shared)
 
 if(NOT LIBNexusWidevine_LIBRARY)
     find_library(LIBNexusWidevine_LIBRARY wvcdm)
-    list(APPEND LIBNexusWidevine_DEFINITIONS "-DUSE_WVCDM")
 endif()
 
 # needed libs
