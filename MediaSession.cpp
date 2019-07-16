@@ -207,7 +207,10 @@ void MediaKeySession::Update(
     uint32_t f_cbKeyMessageResponse) {
   std::string keyResponse(reinterpret_cast<const char*>(f_pbKeyMessageResponse),
       f_cbKeyMessageResponse);
-  if (widevine::Cdm::kSuccess != m_cdm->update(m_sessionId, keyResponse))
+  widevine::Cdm::Status status = m_cdm->update(m_sessionId, keyResponse);
+  if (widevine::Cdm::kSuccess != status)
+     onKeyStatusError(status);
+  else
      onKeyStatusChange();
 }
 
