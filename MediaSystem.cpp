@@ -23,8 +23,8 @@
 #include <sstream>
 #include <sys/utsname.h>
 
-#include <refsw/nexus_config.h>
-#include <refsw/nxclient.h>
+#include <nexus_config.h>
+#include <nxclient.h>
 
 namespace CDMi {
 

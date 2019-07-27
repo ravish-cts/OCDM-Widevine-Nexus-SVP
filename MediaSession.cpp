@@ -29,7 +29,8 @@
 
 #define NYI_KEYSYSTEM "keysystem-placeholder"
 
-#include <refsw/b_secbuf.h>
+#include <b_secbuf.h>
+
 struct Rpc_Secbuf_Info {
     uint32_t type;
     size_t   size;
