@@ -156,6 +156,9 @@ public:
         SessionMap::iterator index (_sessions.find(sessionId));
 
         if (index != _sessions.end()) {
+            // To clean up an underlying session resource, 
+            //  otherwise the session limit(eg,50) will hit eventually
+            index->second->Close();
             _sessions.erase(index);
         }
 
