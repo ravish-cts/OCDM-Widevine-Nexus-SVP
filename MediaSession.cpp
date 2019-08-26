@@ -140,6 +140,7 @@ void MediaKeySession::onKeyStatusChange()
                                         reinterpret_cast<const uint8_t*>(keyValue.c_str()),
                                         keyValue.length());
     }
+    m_piCallback->OnKeyStatusesUpdated();
 }
 
 void MediaKeySession::onKeyStatusError(widevine::Cdm::Status status) {
@@ -167,7 +168,7 @@ void MediaKeySession::onKeyStatusError(widevine::Cdm::Status status) {
     errorStatus = "UnExpectedError";
     break;
   }
-  m_piCallback->OnKeyError(0, CDMi_S_FALSE, errorStatus.c_str());
+  m_piCallback->OnError(0, CDMi_S_FALSE, errorStatus.c_str());
 }
 
 void MediaKeySession::onRemoveComplete() {
@@ -180,6 +181,7 @@ void MediaKeySession::onRemoveComplete() {
                                         reinterpret_cast<const uint8_t*>(keyValue.c_str()),
                                         keyValue.length());
         }
+        m_piCallback->OnKeyStatusesUpdated();
     }
 }
 
