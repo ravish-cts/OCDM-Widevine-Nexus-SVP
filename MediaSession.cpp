@@ -82,21 +82,22 @@ void MediaKeySession::onMessage(widevine::Cdm::MessageType f_messageType, const 
 
   switch (f_messageType) {
   case widevine::Cdm::kLicenseRequest:
+  case widevine::Cdm::kLicenseRenewal:
+  case widevine::Cdm::kLicenseRelease:
   {
-    destUrl.assign(kLicenseServer); 
-    widevine::Cdm::MessageType messageType = widevine::Cdm::kLicenseRequest;
+    destUrl.assign(kLicenseServer);
 
     // FIXME: Errrr, this is weird.
     //if ((Cdm::MessageType)f_message[1] == (Cdm::kIndividualizationRequest + 1)) {
     //  LOGI("switching message type to kIndividualizationRequest");
     //  messageType = Cdm::kIndividualizationRequest;
     //}
-    
-    message = std::to_string(messageType) + ":Type:";
+
+    message = std::to_string(f_messageType) + ":Type:";
     break;
   }
   default:
-    printf("unsupported message type\n");
+    printf("unsupported message type %d\n", f_messageType);
     break;
   }
   message.append(f_message.c_str(),  f_message.size());
