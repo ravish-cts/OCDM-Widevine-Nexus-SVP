@@ -27,6 +27,8 @@
 #include <string.h>
 #include <sys/utsname.h>
 
+#include <core/core.h>
+
 #define NYI_KEYSYSTEM "keysystem-placeholder"
 
 #include <b_secbuf.h>
@@ -43,6 +45,8 @@ struct Rpc_Secbuf_Info {
 using namespace std;
 
 namespace CDMi {
+
+WPEFramework::Core::CriticalSection g_lock;
 
 MediaKeySession::MediaKeySession(widevine::Cdm *cdm, int32_t licenseType)
     : m_cdm(cdm)
@@ -199,11 +203,13 @@ void MediaKeySession::onDirectIndividualizationRequest(
 
 CDMi_RESULT MediaKeySession::Load(void) {
   CDMi_RESULT ret = CDMi_S_FALSE;
+  g_lock.Lock();
   widevine::Cdm::Status status = m_cdm->load(m_sessionId);
   if (widevine::Cdm::kSuccess != status)
     onKeyStatusError(status);
   else
     ret = CDMi_SUCCESS;
+  g_lock.Unlock();
   return ret;
 }
 
@@ -212,27 +218,33 @@ void MediaKeySession::Update(
     uint32_t f_cbKeyMessageResponse) {
   std::string keyResponse(reinterpret_cast<const char*>(f_pbKeyMessageResponse),
       f_cbKeyMessageResponse);
+  g_lock.Lock();
   widevine::Cdm::Status status = m_cdm->update(m_sessionId, keyResponse);
   if (widevine::Cdm::kSuccess != status)
      onKeyStatusError(status);
   else
      onKeyStatusChange();
+  g_lock.Unlock();
 }
 
 CDMi_RESULT MediaKeySession::Remove(void) {
   CDMi_RESULT ret = CDMi_S_FALSE;
+  g_lock.Lock();
   widevine::Cdm::Status status = m_cdm->remove(m_sessionId);
   if (widevine::Cdm::kSuccess != status)
     onKeyStatusError(status);
   else
     ret =  CDMi_SUCCESS;
+  g_lock.Unlock();
   return ret;
 }
 
 CDMi_RESULT MediaKeySession::Close(void) {
   CDMi_RESULT status = CDMi_S_FALSE;
+  g_lock.Lock();
   if (widevine::Cdm::kSuccess == m_cdm->close(m_sessionId))
     status = CDMi_SUCCESS;
+  g_lock.Unlock();
   return status;
 }
 
@@ -293,6 +305,7 @@ CDMi_RESULT MediaKeySession::Decrypt(
     const uint8_t* keyId,
     bool /* initWithLast15 */)
 {
+  g_lock.Lock();
   widevine::Cdm::KeyStatusMap map;
   std::string keyStatus;
 
@@ -379,6 +392,7 @@ CDMi_RESULT MediaKeySession::Decrypt(
   // Encrypted data does not need anymore, freeing
   B_Secbuf_Free(pOpaqueDataEnc);
 
+  g_lock.Unlock();
   return status;
 }
 
