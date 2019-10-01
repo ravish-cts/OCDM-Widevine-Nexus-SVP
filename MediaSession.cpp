@@ -222,9 +222,8 @@ void MediaKeySession::Update(
   g_lock.Lock();
   widevine::Cdm::Status status = m_cdm->update(m_sessionId, keyResponse);
   if (widevine::Cdm::kSuccess != status)
-     onKeyStatusError(status);
-  else
      onKeyStatusChange();
+
   g_lock.Unlock();
 }
 
