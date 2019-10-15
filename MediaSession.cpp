@@ -38,8 +38,6 @@ struct Rpc_Secbuf_Info {
     size_t   size;
     void    *token;
     void    *token_enc;
-    uint32_t subsamples_count;
-    uint32_t subsamples[];
 };
 
 using namespace std;
@@ -330,6 +328,7 @@ CDMi_RESULT MediaKeySession::Decrypt(
         printf("B_Secbuf_Alloc() failed!\n");
         return status;
   }
+
   B_Secbuf_GetBufferInfo(pOpaqueData, &secureBufferInfo);
   pRPCsecureBufferInfo->token = secureBufferInfo.token;
   ::memcpy((void*)f_pbData, pRPCsecureBufferInfo, f_cbData); // Update token for WPE to get the secure buffer
@@ -339,50 +338,38 @@ CDMi_RESULT MediaKeySession::Decrypt(
         printf("B_Secbuf_AllocWithToken() failed!\n");
         return status;
   }
-  // copy all samples data including clear one too
-  B_Secbuf_ImportData(pOpaqueData, 0, (unsigned char*)pOpaqueDataEnc, pRPCsecureBufferInfo->size, 1);
 
   if (widevine::Cdm::kSuccess == m_cdm->getKeyStatuses(m_sessionId, &map)) {
     widevine::Cdm::KeyStatusMap::iterator it = map.begin();
     // FIXME: We just check the first key? How do we know that's the Widevine key and not, say, a PlayReady one?
     if (widevine::Cdm::kUsable == it->second) {
       widevine::Cdm::OutputBuffer output;
+      output.data = reinterpret_cast<uint8_t*>(pOpaqueData);
+      output.data_length = pRPCsecureBufferInfo->size;
+      output.is_secure = true;
 
-      uint32_t inClear, inEncrypted,  inTotal = 0, totalEncrypted = 0;
-      for(uint32_t i = 0; i < pRPCsecureBufferInfo->subsamples_count/2; i++) {
-        inClear     = pRPCsecureBufferInfo->subsamples[2*i+0];
-        inEncrypted = pRPCsecureBufferInfo->subsamples[2*i+1];
-        output.data = reinterpret_cast<uint8_t*>(pOpaqueData)+inTotal+inClear;
-        output.data_length = inEncrypted;
-        output.is_secure = true;
+      widevine::Cdm::InputBuffer input;
+      input.data = reinterpret_cast<uint8_t*>(pOpaqueDataEnc);
+      input.data_length = output.data_length;
+      input.key_id = keyId;
+      input.key_id_length = keyIdLength;
+      input.iv = m_IV;
+      input.iv_length = sizeof(m_IV);
 
-        widevine::Cdm::InputBuffer input;
-        input.data = reinterpret_cast<uint8_t*>(pOpaqueDataEnc)+inTotal+inClear;
-        input.data_length = output.data_length;
-        input.key_id = keyId;
-        input.key_id_length = keyIdLength;
-        input.iv = m_IV;
-        input.iv_length = sizeof(m_IV);
+      input.encryption_scheme = widevine::Cdm::kAesCtr;
+      input.is_video = true;
+      input.block_offset = 0;
+      for (int ii = 15, counter = 0; ii >= 12; ii--, counter = counter >> 8) {
+          m_IV[ii] = counter & 0xFF;
+      }
 
-        input.encryption_scheme = widevine::Cdm::kAesCtr;
-        input.is_video = true;
-        input.block_offset = (totalEncrypted)%16;
-        for (int ii = 15, counter = (totalEncrypted)/ 16; ii >= 12; ii--, counter = counter >> 8) {
-            m_IV[ii] = counter & 0xFF;
-        }
-
-        input.first_subsample = i==0 ? true : false;
-        input.last_subsample  = i==(pRPCsecureBufferInfo->subsamples_count/2 -1 ) ? true : false;
-        if (widevine::Cdm::kSuccess == m_cdm->decrypt(input, output)) {
-          status = CDMi_SUCCESS;
-        } else {
-          printf("CDM decrypt failed!\n");
-          break;
-        }
-        inTotal += inClear + inEncrypted;
-        totalEncrypted += inEncrypted;
-
-      } // subsampling loop
+      input.first_subsample = true;
+      input.last_subsample  = true;
+      if (widevine::Cdm::kSuccess == m_cdm->decrypt(input, output)) {
+        status = CDMi_SUCCESS;
+      } else {
+        printf("CDM decrypt failed!\n");
+      }
     }
   }
 
