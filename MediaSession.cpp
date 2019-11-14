@@ -31,7 +31,7 @@
 
 #define NYI_KEYSYSTEM "keysystem-placeholder"
 
-#include <b_secbuf.h>
+#include <nexus_memory.h>
 
 struct Rpc_Secbuf_Info {
     uint32_t type;
@@ -52,13 +52,25 @@ MediaKeySession::MediaKeySession(widevine::Cdm *cdm, int32_t licenseType)
     , m_initData("")
     , m_initDataType(widevine::Cdm::kCenc)
     , m_licenseType((widevine::Cdm::SessionType)licenseType)
-    , m_sessionId("") {
+    , m_sessionId("")
+    , m_pNexusMemory(nullptr)
+    , m_NexusMemorySize(512 * 1024) {
+
   m_cdm->createSession(m_licenseType, &m_sessionId);
 
-  ::memset(m_IV, 0 , sizeof(m_IV));;
+  ::memset(m_IV, 0 , sizeof(m_IV));
+
+  NEXUS_Memory_Allocate(m_NexusMemorySize, nullptr, &m_pNexusMemory);
+  if (!m_pNexusMemory) {
+    printf("Memory allocation failure\n");
+    m_NexusMemorySize = 0;
+  }
 }
 
 MediaKeySession::~MediaKeySession(void) {
+
+    if (!m_pNexusMemory)
+        NEXUS_Memory_Free(m_pNexusMemory);
 }
 
 
@@ -303,6 +315,9 @@ CDMi_RESULT MediaKeySession::Decrypt(
     const uint8_t* keyId,
     bool /* initWithLast15 */)
 {
+
+  static NEXUS_HeapHandle secureHeap = NEXUS_Heap_Lookup(NEXUS_HeapLookupType_eCompressedRegion);
+
   g_lock.Lock();
   widevine::Cdm::KeyStatusMap map;
   std::string keyStatus;
@@ -315,29 +330,54 @@ CDMi_RESULT MediaKeySession::Decrypt(
     memset(&(m_IV[f_cbIV]), 0, 16 - f_cbIV);
   }
 
-  Rpc_Secbuf_Info *pRPCsecureBufferInfo;
-  B_Secbuf_Info secureBufferInfo;
+    // Reallocate input memory if needed.
+  if (f_cbData >  m_NexusMemorySize) {
 
-  void *pOpaqueData, *pOpaqueDataEnc;
+    void *newBuffer = nullptr;
+    int rc = NEXUS_Memory_Allocate(f_cbData, nullptr, &newBuffer);
+    if( rc != 0 ) {
 
-  pRPCsecureBufferInfo = static_cast<Rpc_Secbuf_Info*>(::malloc(f_cbData));
-  ::memcpy(pRPCsecureBufferInfo, f_pbData, f_cbData);
-
-  // Allocate a secure buffer for decrypted data, output of decrypt
-  if (B_Secbuf_Alloc(pRPCsecureBufferInfo->size, B_Secbuf_Type_eSecure, &pOpaqueData)) {
-        printf("B_Secbuf_Alloc() failed!\n");
+        printf("NexusMemory to small, use larger buffer. could not allocate memory %d", f_cbData);
         return status;
+    }
+
+    NEXUS_Memory_Free(m_pNexusMemory);
+    m_pNexusMemory = newBuffer;
+    m_NexusMemorySize = f_cbData;
+    printf("NexusMemory to small, use larger buffer. allocate memory %d", f_cbData);
   }
 
-  B_Secbuf_GetBufferInfo(pOpaqueData, &secureBufferInfo);
-  pRPCsecureBufferInfo->token = secureBufferInfo.token;
-  ::memcpy((void*)f_pbData, pRPCsecureBufferInfo, f_cbData); // Update token for WPE to get the secure buffer
 
-  // Allocate with a token for encrypted data, input of decrypt
-  if (B_Secbuf_AllocWithToken(pRPCsecureBufferInfo->size, B_Secbuf_Type_eGeneric, pRPCsecureBufferInfo->token_enc, &pOpaqueDataEnc)) {
-        printf("B_Secbuf_AllocWithToken() failed!\n");
-        return status;
+  NEXUS_MemoryBlockHandle pNexusMemoryBlock = NEXUS_MemoryBlock_Allocate(secureHeap, f_cbData, 0, nullptr);
+  if (!pNexusMemoryBlock) {
+
+    printf("NexusBlockMemory could not allocate %d", f_cbData);
+    return status;
   }
+
+  NEXUS_Error rc;
+  void *pOpaqueData = nullptr;
+  rc = NEXUS_MemoryBlock_Lock(pNexusMemoryBlock, &pOpaqueData);
+  if (rc) {
+
+    printf("NexusBlockMemory is not usable");
+    NEXUS_MemoryBlock_Free(pNexusMemoryBlock);
+    pOpaqueData = nullptr;
+    return status;
+  }
+
+  NEXUS_MemoryBlockTokenHandle pToken = NEXUS_MemoryBlock_CreateToken(pNexusMemoryBlock);
+  if (!pToken) {
+
+    printf("Could not create a token for another process");
+    NEXUS_MemoryBlock_Unlock(pNexusMemoryBlock);
+    NEXUS_MemoryBlock_Free(pNexusMemoryBlock);
+    pOpaqueData = nullptr;
+    return status;
+  }
+
+  // Copy provided payload to Input of Decryption.
+  ::memcpy(m_pNexusMemory, f_pbData, f_cbData);
 
   if (widevine::Cdm::kSuccess == m_cdm->getKeyStatuses(m_sessionId, &map)) {
     widevine::Cdm::KeyStatusMap::iterator it = map.begin();
@@ -345,11 +385,11 @@ CDMi_RESULT MediaKeySession::Decrypt(
     if (widevine::Cdm::kUsable == it->second) {
       widevine::Cdm::OutputBuffer output;
       output.data = reinterpret_cast<uint8_t*>(pOpaqueData);
-      output.data_length = pRPCsecureBufferInfo->size;
+      output.data_length = f_cbData;
       output.is_secure = true;
 
       widevine::Cdm::InputBuffer input;
-      input.data = reinterpret_cast<uint8_t*>(pOpaqueDataEnc);
+      input.data = reinterpret_cast<uint8_t*>(m_pNexusMemory);
       input.data_length = output.data_length;
       input.key_id = keyId;
       input.key_id_length = keyIdLength;
@@ -373,11 +413,12 @@ CDMi_RESULT MediaKeySession::Decrypt(
     }
   }
 
-  ::free(pRPCsecureBufferInfo);
-  // only freeing desc here, pOpaqueData will be freed by WPE in gstreamer
-  B_Secbuf_FreeDesc(pOpaqueData);
-  // Encrypted data does not need anymore, freeing
-  B_Secbuf_Free(pOpaqueDataEnc);
+  // Return clear content.
+  *f_pcbOpaqueClearContent = sizeof(pToken);
+  *f_ppbOpaqueClearContent = reinterpret_cast<uint8_t*>(&pToken);
+
+  NEXUS_MemoryBlock_Unlock(pNexusMemoryBlock);
+  NEXUS_MemoryBlock_Free(pNexusMemoryBlock);
 
   g_lock.Unlock();
   return status;
