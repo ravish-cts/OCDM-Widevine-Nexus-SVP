@@ -33,13 +33,6 @@
 
 #include <nexus_memory.h>
 
-struct Rpc_Secbuf_Info {
-    uint32_t type;
-    size_t   size;
-    void    *token;
-    void    *token_enc;
-};
-
 using namespace std;
 
 namespace CDMi {
@@ -69,8 +62,10 @@ MediaKeySession::MediaKeySession(widevine::Cdm *cdm, int32_t licenseType)
 
 MediaKeySession::~MediaKeySession(void) {
 
-    if (!m_pNexusMemory)
-        NEXUS_Memory_Free(m_pNexusMemory);
+    if (m_pNexusMemory) {
+      NEXUS_Memory_Free(m_pNexusMemory);
+      m_NexusMemorySize = 0;
+    }
 }
 
 
