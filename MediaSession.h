@@ -97,6 +97,8 @@ private:
     std::string m_sessionId;
     IMediaKeySessionCallback *m_piCallback;
     uint8_t m_IV[16];
+    void *m_pNexusMemory;
+    uint32_t m_NexusMemorySize;
 };
 
 }  // namespace CDMi
