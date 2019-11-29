@@ -29,7 +29,7 @@
 find_path(LIBNexusWidevine_INCLUDE_DIR cdm.h
         PATH_SUFFIXES widevine refsw)
 
-find_path(LIBNexusSVP_INCLUDE_DIR b_secbuf.h
+find_path(LIBNexusSVP_INCLUDE_DIR sage_srai.h
         PATH_SUFFIXES refsw)
 
 set(LIBNexusWidevine_DEFINITIONS "")
@@ -47,7 +47,7 @@ endif()
 list(APPEND NeededLibs protobuf-lite cmndrm cmndrm_tl crypto oemcrypto_tl)
 
 # needed svp libs
-list(APPEND NeededLibs drmrootfs srai b_secbuf)
+list(APPEND NeededLibs drmrootfs srai)
 
 foreach (_library ${NeededLibs})
     find_library(LIBRARY_${_library} ${_library})
