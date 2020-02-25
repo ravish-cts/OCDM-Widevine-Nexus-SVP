@@ -25,6 +25,9 @@
 
 #include <core/core.h>
 
+extern uint8_t* kDeviceCert;
+extern size_t kDeviceCertSize;
+
 namespace CDMi {
 
 class HostImplementation : 

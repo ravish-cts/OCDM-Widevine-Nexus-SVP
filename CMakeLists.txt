@@ -33,7 +33,6 @@ find_package(NexusWidevine)
 
 add_library(${DRM_PLUGIN_NAME} SHARED
     HostImplementation.cpp 
-    DeviceCertificate.cpp 
     MediaSession.cpp 
     MediaSystem.cpp
 )
