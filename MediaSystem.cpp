@@ -22,12 +22,15 @@
 #include <iostream>
 #include <sstream>
 #include <sys/utsname.h>
+#include <core/core.h>
 
 #include <nexus_config.h>
 #include <nxclient.h>
 
 uint8_t* kDeviceCert = nullptr;
 size_t kDeviceCertSize = 0;
+
+using namespace WPEFramework;
 
 namespace CDMi {
 
@@ -71,7 +74,7 @@ public:
         snprintf(joinSettings.name, NXCLIENT_MAX_NAME, "widevine");
         rc = NxClient_Join(&joinSettings);
         assert (rc == 0);
-
+        DEBUG_VARIABLE(rc);
         widevine::Cdm::ClientInfo client_info;
 
         // Set client info that denotes this as the test suite:
@@ -119,8 +122,8 @@ public:
             delete _cdm;
         }
 
-        if (kDeviceCertSize m_meteringCertificate != nullptr) {
-            delete [] kDeviceCertSize;
+        if (kDeviceCert != nullptr) {
+            delete [] kDeviceCert;
             kDeviceCert = nullptr;
             kDeviceCertSize = 0;
         }
