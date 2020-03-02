@@ -67,43 +67,9 @@ public:
         , _cdm(nullptr)
         , _host()
         , _sessions() {
-
-        NxClient_JoinSettings joinSettings;
-        NEXUS_Error rc;
-        NxClient_GetDefaultJoinSettings(&joinSettings);
-        snprintf(joinSettings.name, NXCLIENT_MAX_NAME, "widevine");
-        rc = NxClient_Join(&joinSettings);
-        assert (rc == 0);
-        DEBUG_VARIABLE(rc);
-        widevine::Cdm::ClientInfo client_info;
-
-        // Set client info that denotes this as the test suite:
-        client_info.product_name = "WPEFramework";
-        client_info.company_name = "www.metrological.com";
-        client_info.model_name = "www";
-
-    #if defined(__linux__)
-        client_info.device_name = "Linux";
-        {
-            struct utsname name;
-            if (!uname(&name)) {
-                client_info.arch_name = name.machine;
-            }
-        }
-#else
-        client_info.device_name = "unknown";
-#endif
-        client_info.build_info = __DATE__;
-
-        // widevine::Cdm::DeviceCertificateRequest cert_request;
-
-        if (widevine::Cdm::kSuccess == widevine::Cdm::initialize(
-                widevine::Cdm::kOpaqueHandle, client_info, &_host, &_host, &_host, static_cast<widevine::Cdm::LogLevel>(0))) {
-	    // Setting the last parameter to true, requres serviceCertificates so the requests can be encrypted. Currently badly supported
-            // in the EME tests, so turn of for now :-)
-            _cdm = widevine::Cdm::create(this, &_host, false);
-        }
+  
     }
+
     virtual ~WideVine() {
         _adminLock.Lock();
 
@@ -131,6 +97,42 @@ public:
 
     void Initialize(const WPEFramework::PluginHost::IShell * shell, const std::string& configline)
     {
+        NxClient_JoinSettings joinSettings;
+        NEXUS_Error rc;
+        NxClient_GetDefaultJoinSettings(&joinSettings);
+        snprintf(joinSettings.name, NXCLIENT_MAX_NAME, "widevine");
+        rc = NxClient_Join(&joinSettings);
+        assert (rc == 0);
+        DEBUG_VARIABLE(rc);
+        widevine::Cdm::ClientInfo client_info;
+
+        // Set client info that denotes this as the test suite:
+        client_info.product_name = "WPEFramework";
+        client_info.company_name = "www.metrological.com";
+        client_info.model_name = "www";
+
+#if defined(__linux__)
+        client_info.device_name = "Linux";
+        {
+            struct utsname name;
+            if (!uname(&name)) {
+                client_info.arch_name = name.machine;
+            }
+        }
+#else
+        client_info.device_name = "unknown";
+#endif
+        client_info.build_info = __DATE__;
+
+        // widevine::Cdm::DeviceCertificateRequest cert_request;
+
+        if (widevine::Cdm::kSuccess == widevine::Cdm::initialize(
+                widevine::Cdm::kOpaqueHandle, client_info, &_host, &_host, &_host, static_cast<widevine::Cdm::LogLevel>(0))) {
+	    // Setting the last parameter to true, requres serviceCertificates so the requests can be encrypted. Currently badly supported
+            // in the EME tests, so turn of for now :-)
+            _cdm = widevine::Cdm::create(this, &_host, false);
+        }
+        
         Config config;
         config.FromString(configline);
 
